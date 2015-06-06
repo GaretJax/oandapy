@@ -5,6 +5,29 @@ import json
 import requests
 
 
+class RequestsMixin(object):
+    version = 1
+
+    def _endpoint(self, *segments):
+        return '/'.join(['v%d' % self.version] + [str(s) for s in segments])
+
+    def _request(self, method, *segments, **params):
+        endpoint = self._endpoint(*segments)
+        return self.request(endpoint=endpoint, method=method, params=params)
+
+    def _get(self, *args, **kwargs):
+        return self._request('GET', *args, **kwargs)
+
+    def _post(self, *args, **kwargs):
+        return self._request('POST', *args, **kwargs)
+
+    def _patch(self, *args, **kwargs):
+        return self._request('PATCH', *args, **kwargs)
+
+    def _delete(self, *args, **kwargs):
+        return self._request('DELETE', *args, **kwargs)
+
+
 class EndpointsMixin(object):
     """EndpointsMixin provides a mixin for the API instance
 
@@ -21,25 +44,21 @@ class EndpointsMixin(object):
 
         Docs: http://developer.oanda.com/docs/v1/rates/#get-an-instrument-list
         """
-        params['accountId'] = account_id
-        endpoint = 'v1/instruments'
-        return self.request(endpoint, params=params)
+        return self._get('instruments', accountId=account_id, **params)
 
     def get_prices(self, **params):
         """Get current prices
 
         Docs: http://developer.oanda.com/docs/v1/rates/#get-current-prices
         """
-        endpoint = 'v1/prices'
-        return self.request(endpoint, params=params)
+        return self._get('prices', **params)
 
     def get_history(self, **params):
         """Retrieve instrument history
 
         Docs: http://developer.oanda.com/docs/v1/rates/#retrieve-instrument-history
         """
-        endpoint = 'v1/candles'
-        return self.request(endpoint, params=params)
+        return self._get('candles', **params)
 
     # Accounts
 
@@ -48,24 +67,21 @@ class EndpointsMixin(object):
 
         Docs: http://developer.oanda.com/docs/v1/accounts/#get-accounts-for-a-user
         """
-        endpoint = 'v1/accounts'
-        return self.request(endpoint, "POST", params=params)
+        return self._post('accounts', **params)
 
     def get_accounts(self, **params):
         """Get accounts for a user.
 
         Docs: http://developer.oanda.com/docs/v1/accounts/#get-accounts-for-a-user
         """
-        endpoint = 'v1/accounts'
-        return self.request(endpoint, params=params)
+        return self._get('accounts', **params)
 
     def get_account(self, account_id, **params):
         """Get account information
 
         Docs: http://developer.oanda.com/docs/v1/accounts/#get-account-information
         """
-        endpoint = 'v1/accounts/%s' % (account_id)
-        return self.request(endpoint, params=params)
+        return self._get('accounts', account_id, **params)
 
     # Orders
 
@@ -74,40 +90,37 @@ class EndpointsMixin(object):
 
         Docs: http://developer.oanda.com/docs/v1/orders/#get-orders-for-an-account
         """
-        endpoint = 'v1/accounts/%s/orders' % (account_id)
-        return self.request(endpoint, params=params)
+        return self._get('accounts', account_id, 'orders', **params)
 
     def create_order(self, account_id, **params):
         """Create a new order
 
         Docs: http://developer.oanda.com/docs/v1/orders/#create-a-new-order
         """
-        endpoint = 'v1/accounts/%s/orders' % (account_id)
-        return self.request(endpoint, "POST", params=params)
+        return self._post('accounts', account_id, 'orders', **params)
 
     def get_order(self, account_id, order_id, **params):
         """Get information for an order
 
         Docs: http://developer.oanda.com/docs/v1/orders/#get-information-for-an-order
         """
-        endpoint = 'v1/accounts/%s/orders/%s' % (account_id, order_id)
-        return self.request(endpoint, params=params)
+        return self._get('accounts', account_id, 'orders', order_id, **params)
 
     def modify_order(self, account_id, order_id, **params):
         """Modify an existing order
 
         Docs: http://developer.oanda.com/docs/v1/orders/#modify-an-existing-order
         """
-        endpoint = 'v1/accounts/%s/orders/%s' % (account_id, order_id)
-        return self.request(endpoint, "PATCH", params=params)
+        return self._patch('accounts', account_id, 'orders', order_id,
+                           **params)
 
     def close_order(self, account_id, order_id, **params):
         """Close an order
 
         Docs: http://developer.oanda.com/docs/v1/orders/#close-an-order
         """
-        endpoint = 'v1/accounts/%s/orders/%s' % (account_id, order_id)
-        return self.request(endpoint, "DELETE", params=params)
+        return self._delete('accounts', account_id, 'orders', order_id,
+                            **params)
 
     # Trades
 
@@ -116,32 +129,30 @@ class EndpointsMixin(object):
 
         Docs: http://developer.oanda.com/docs/v1/trades/#get-a-list-of-open-trades
         """
-        endpoint = 'v1/accounts/%s/trades' % (account_id)
-        return self.request(endpoint, params=params)
+        return self._get('accounts', account_id, 'trades', **params)
 
     def get_trade(self, account_id, trade_id, **params):
         """Get information on a specific trade
 
         Docs: http://developer.oanda.com/docs/v1/trades/#get-information-on-a-specific-trade
         """
-        endpoint = 'v1/accounts/%s/trades/%s' % (account_id, trade_id)
-        return self.request(endpoint, params=params)
+        return self._get('accounts', account_id, 'trades', trade_id, **params)
 
     def modify_trade(self, account_id, trade_id, **params):
         """Modify an existing trade
 
         Docs: http://developer.oanda.com/docs/v1/trades/#modify-an-existing-trade
         """
-        endpoint = 'v1/accounts/%s/trades/%s' % (account_id, trade_id)
-        return self.request(endpoint, "PATCH", params=params)
+        return self._patch('accounts', account_id, 'trades', trade_id,
+                           **params)
 
     def close_trade(self, account_id, trade_id, **params):
         """Close an open trade
 
         Docs: http://developer.oanda.com/docs/v1/trades/#close-an-open-trade
         """
-        endpoint = 'v1/accounts/%s/trades/%s' % (account_id, trade_id)
-        return self.request(endpoint, "DELETE", params=params)
+        return self._delete('accounts', account_id, 'trades', trade_id,
+                            **params)
 
     # Positions
 
@@ -150,24 +161,23 @@ class EndpointsMixin(object):
 
         Docs: http://developer.oanda.com/docs/v1/positions/#get-a-list-of-all-open-positions
         """
-        endpoint = 'v1/accounts/%s/positions' % (account_id)
-        return self.request(endpoint, params=params)
+        return self._get('accounts', account_id, 'positions', **params)
 
     def get_position(self, account_id, instrument, **params):
         """Get the position for an instrument
 
         Docs: http://developer.oanda.com/docs/v1/positions/#get-the-position-for-an-instrument
         """
-        endpoint = 'v1/accounts/%s/positions/%s' % (account_id, instrument)
-        return self.request(endpoint, params=params)
+        return self._get('accounts', account_id, 'positions', instrument,
+                         **params)
 
     def close_position(self, account_id, instrument, **params):
         """Close an existing position
 
         Docs: http://developer.oanda.com/docs/v1/positions/#close-an-existing-position
         """
-        endpoint = 'v1/accounts/%s/positions/%s' % (account_id, instrument)
-        return self.request(endpoint, "DELETE", params=params)
+        return self._delete('accounts', account_id, 'positions', instrument,
+                            **params)
 
     # Transaction history
 
@@ -176,17 +186,15 @@ class EndpointsMixin(object):
 
         Docs: http://developer.oanda.com/docs/v1/transactions/#get-transaction-history
         """
-        endpoint = 'v1/accounts/%s/transactions' % (account_id)
-        return self.request(endpoint, params=params)
+        return self._get('accounts', account_id, 'transactions', **params)
 
     def get_transaction(self, account_id, transaction_id):
         """Get information for a transaction
 
         Docs: http://developer.oanda.com/docs/v1/transactions/#get-information-for-a-transaction
         """
-        endpoint = 'v1/accounts/%s/transactions/%s' % (
-            account_id, transaction_id)
-        return self.request(endpoint)
+        return self._get('accounts', account_id, 'transactions',
+                         transaction_id)
 
     # Forex labs
 
@@ -231,9 +239,16 @@ class EndpointsMixin(object):
         return self.request(endpoint, params=params)
 
 
-class API(EndpointsMixin, object):
+class API(EndpointsMixin, RequestsMixin, object):
     """Provides functionality for access to core OANDA API calls"""
-    def __init__(self, environment="practice", access_token=None,
+
+    environments = {
+        'sandbox': 'http://api-sandbox.oanda.com',
+        'practice': 'https://api-fxpractice.oanda.com',
+        'live': 'https://api-fxtrade.oanda.com',
+    }
+
+    def __init__(self, environment='practice', access_token=None,
                  headers=None):
         """Instantiate an instance of OandaPy's API wrapper
 
@@ -245,13 +260,7 @@ class API(EndpointsMixin, object):
                              not sandbox.
         """
 
-        if environment == 'sandbox':
-            self.api_url = 'http://api-sandbox.oanda.com'
-        elif environment == 'practice':
-            self.api_url = 'https://api-fxpractice.oanda.com'
-        elif environment == 'live':
-            self.api_url = 'https://api-fxtrade.oanda.com'
-
+        self.api_url = self.environments[environment]
         self.access_token = access_token
         self.client = requests.Session()
 
@@ -293,10 +302,9 @@ class API(EndpointsMixin, object):
         try:
             response = func(url, **request_args)
         except requests.RequestException as e:
-            print (str(e))
-        content = response.content.decode('utf-8')
+            print(str(e))
 
-        content = json.loads(content)
+        content = response.json()
 
         # error message
         if response.status_code >= 400:
@@ -311,7 +319,12 @@ class Streamer(object):
     Docs: http://developer.oanda.com/docs/v1/stream/#rates-streaming
     """
 
-    def __init__(self, environment="practice", access_token=None):
+    environments = {
+        'practice': 'https://stream-fxpractice.oanda.com/v1/prices',
+        'live': 'https://stream-fxtrade.oanda.com/v1/prices',
+    }
+
+    def __init__(self, environment='practice', access_token=None):
         """Instantiates an instance of OandaPy's streaming API wrapper.
 
         :param environment: (optional) Provide the environment for oanda's REST
@@ -322,11 +335,7 @@ class Streamer(object):
                              not sandbox.
         """
 
-        if environment == 'practice':
-            self.api_url = 'https://stream-fxpractice.oanda.com/v1/prices'
-        elif environment == 'live':
-            self.api_url = 'https://stream-fxtrade.oanda.com/v1/prices'
-
+        self.api_url = self.environments[environment]
         self.access_token = access_token
         self.client = requests.Session()
         self.client.stream = True
@@ -373,8 +382,7 @@ class Streamer(object):
         Override this to handle your streaming data.
         :param data: response object sent from stream
         """
-
-        return True
+        pass
 
     def on_error(self, data):
         """Called when stream returns non-200 status code
@@ -382,8 +390,7 @@ class Streamer(object):
         Override this to handle your streaming data.
         :param data: error response object sent from stream
         """
-
-        return
+        pass
 
     def disconnect(self):
         """Manually disconnect the streaming client"""
